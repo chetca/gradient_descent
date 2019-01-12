@@ -71,52 +71,55 @@ def bgd(target_fn, gradient_fn, theta_0, tolerance=0.000001):
 
 """
 # минимизация на основе стохастического градиентного спуска 
-def in_random_order(data):
-    # генератор, который возвращает элементы данных в случайном порядке
-    indexes = [i for i, _ in enumerate(data)] # создаём список индексов
-    random.shuffle(indexes) # перемешиваем данные
-    for i in indexes: # возвращаем в этом порядке
-        yield data[i]
-
-def gen_data(a,b, num = 100, var = 10):
-    x = np.array([[1,i] for i in range(num)])
-    y = np.dot(x, [a,b]) + np.array([random.normalvariate(0, var) for _ in range(num)])
-    return x,y
-
-a = 10
-b = 2
-x, y = gen_data(a,b)
-
-def sgd(target_fn, gradient_fn, x, y, theta_0, alpha_0=0.01):
-
-    data = list(zip(x, y))
-    theta = theta_0 # первоначальная гипотеза
-    alpha = alpha_0 # первоначальный размер шага
-    min_theta, min_value = None, float("inf") # минимум на этот момент
-    iterations_with_no_improvement = 0
-
-    # останавливаемся, если достигли 100 итераций без улучшений
-    while iterations_with_no_improvement < 100:
-        value = sum( target_fn(x_i, y_i, theta) for x_i, y_i in data )
-
-        if value < min_value:
-            # если найден новый минимум, то запоминаем его
-            # и возвращаемся к первоначальному размеру шага
-            min_theta, min_value = theta, value
-            iterations_with_no_improvement = 0
-            alpha = alpha_0
-        else:
-            # в противном случае улучшений нет,
-            # поэтому пытаемся сжать размер шага
-            iterations_with_no_improvement += 1
-            alpha *= 0.9
-
-        # и делаем шаг градиента для каждой из точек данных
-        for x_i, y_i in in_random_order(data):
-            gradient_i = gradient_fn(x_i, y_i, theta)
-            theta = vector_subtract(theta, scalar_multiply(alpha, gradient_i))
-
-    return min_theta
+    def gen_data(a,b, num = 100, var = 10):
+        #генерация данных
+        x = np.array([[1,i] for i in range(num)])
+        y = np.dot(x, [a,b]) + np.array([random.normalvariate(0, var) for _ in range(num)])
+        return x,y
+    
+    def plot_abline(a,b, xmin = -10, xmax = 110, label = 'Least Squares Line'):
+        #параметры для графика
+        x1 = np.arange(xmin, xmax,1)
+        y1 = a + b*x1
+        plt.plot(x1,y1, '--r', linewidth = 3, label = label)
+        plt.legend(loc = 'upper left')
+		
+	def sgd(target_fn, gradient_fn, x, y, theta_0, alpha_0=0.01):
+		data = list(zip(x, y))
+		theta = theta_0 # первоначальная гипотеза
+		alpha = alpha_0 # первоначальный размер шага
+		min_theta, min_value = None, float("inf") # минимум на этот момент
+		iterations_with_no_improvement = 0
+		# останавливаемся, если достигли 100 итераций без улучшений
+		while iterations_with_no_improvement < 100:
+			value = sum( target_fn(x_i, y_i, theta) for x_i, y_i in data )
+			if value < min_value:
+				# если найден новый минимум, то запоминаем его
+				# и возвращаемся к первоначальному размеру шага
+				min_theta, min_value = theta, value
+				iterations_with_no_improvement = 0
+				alpha = alpha_0
+			else:
+				# в противном случае улучшений нет,
+				# поэтому пытаемся сжать размер шага
+				iterations_with_no_improvement += 1
+				alpha *= 0.9
+			# и делаем шаг градиента для каждой из точек данных
+			for x_i, y_i in in_random_order(data):
+				gradient_i = gradient_fn(x_i, y_i, theta)
+				theta = vector_subtract(theta, scalar_multiply(alpha, gradient_i))
+		return min_theta
+        
+    def SGD(x, y, beta, learnig_rate, num_iter): 
+        N = len(y)
+        for i in range(num_iter):
+            error = y - np.dot(x, beta)
+            cost = np.dot(error.transpose(), error) / N
+            if i % 10000 == 0:
+                print('Итерация {} | Стоимость {}'.format(i, cost))
+            gradient = - 2 * np.dot(x.transpose(), error)
+            beta -= learning_rate * gradient
+        return beta
 """
 
 if __name__ == "__main__":
@@ -155,10 +158,28 @@ if __name__ == "__main__":
 """
     print("применение стохастической минимизации sgd")
 
-    v = 20*np.random.random((3)) - 10
-    print(v)
-    v = sgd(func, func_gradient, x, y, v)
+    setattr(plt,'abline', plot_abline)
+    a = 10
+    b = 2
+    x, y = gen_data(a,b)
 
-    print("минимум v", v)
-    print("минимальное значение", func(v))
+    plt.scatter(x[:,1],y)
+    plt.abline(a,b)
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title('Data')
+    plt.grid();
+
+    learning_rate = 1e-6
+    num_iter = 50000
+    beta = np.ones(2)
+    beta_hat = SGD(x,y,beta, learning_rate, num_iter)
+    beta_hat
+
+    plt.scatter(x[:,1],y)
+    plt.abline(beta_hat[0], beta_hat[1], label = 'SGD line')
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.title('Data')
+    plt.grid(); 
 """
